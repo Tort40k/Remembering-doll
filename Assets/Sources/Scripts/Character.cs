@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
-public class Character : MonoBehaviour
+public class Character : MonoBehaviour, IControllable
 {
     [SerializeField] private CharacterController controller;
     [SerializeField] private float _gravity = -9.81f;
@@ -20,8 +20,8 @@ public class Character : MonoBehaviour
         if (controller == null)
             controller = GetComponent<CharacterController>();
     }
-
-    private void Update()
+    
+    private void FixedUpdate()
     {
         isGround = IsOnTheGround();
         if (isGround && _velocityY < 0)
@@ -29,27 +29,28 @@ public class Character : MonoBehaviour
             _velocityY = -2f; 
         }
 
-        _moveDirection = new Vector3(Input.GetAxis("Horizontal"), 0f, Input.GetAxis("Vertical"));
-
-        if (Input.GetKeyDown(KeyCode.Space) && isGround)
-        {
-            print("I`m jumping!");
-            Jump();
-        }
-
         DoGravity();
-        Move(_moveDirection);
+        MovementLogic();
     }
 
-    private void Move(Vector3 direction)
+    public void Move(Vector3 direction)
     {
-        Vector3 finalMove = (direction * _speed) + (Vector3.up * _velocityY);
+        _moveDirection = direction;
+        
+    }
+    private void MovementLogic(){
+        Vector3 finalMove = (_moveDirection * _speed) + (Vector3.up * _velocityY);
         controller.Move(finalMove * Time.deltaTime);
     }
 
-    private void Jump()
+    public void Jump()
     {
-        _velocityY = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
+        if (isGround)
+        {
+            _velocityY = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
+            print("I`m jumping!");
+        }
+        
     }
 
     private bool IsOnTheGround()
