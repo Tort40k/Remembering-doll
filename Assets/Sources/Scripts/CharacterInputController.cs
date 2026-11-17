@@ -1,39 +1,57 @@
 using UnityEngine;
 using System;
+using UnityEngine.InputSystem;
+using VContainer;
+
 public class CharacterInputController : MonoBehaviour
 {
+    private InputSystem_Actions _inputActions;
     private IControllable _controllable;
 
-    private void Awake()
+    [Inject]
+    public void Construct(InputSystem_Actions inputActions, IControllable controllable)
     {
-        _controllable = GetComponent<IControllable>();
+        _inputActions = inputActions;
+        _controllable = controllable;
 
-        if(_controllable == null)
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+
+        if (_controllable == null)
         {
-            throw new Exception("IContollable no exist in {gameobject.name}");
+            throw new Exception($"IControllable not exist in {gameObject.name}");
         }
+
+        _inputActions.Enable();
+        _inputActions.Player.Jump.performed += JumpOnPerformed;
+    }
+
+    private void OnDestroy()
+    {
+        if (_inputActions != null)
+        {
+            _inputActions.Player.Jump.performed -= JumpOnPerformed;
+            _inputActions.Disable();
+        }
+    }
+
+    private void JumpOnPerformed(InputAction.CallbackContext context)
+    {
+        _controllable.Jump();
     }
 
     private void Update()
     {
         ReadMove();
-        ReadJump();
     }
 
     private void ReadMove()
     {
-        float horizontal = Input.GetAxis("Horizontal");
-        float vertical = Input.GetAxis("Vertical");
+        var moveDirection = _inputActions.Player.Move.ReadValue<Vector2>();
+        
 
-        Vector3 direction = new Vector3(horizontal, 0f, vertical);
+        Vector3 direction = new Vector3(moveDirection.x, 0f, moveDirection.y);
+        
         _controllable.Move(direction);
-    }
-
-    private void ReadJump()
-    {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            _controllable.Jump();
-        }
     }
 }
