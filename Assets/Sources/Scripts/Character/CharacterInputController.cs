@@ -24,6 +24,8 @@ public class CharacterInputController : MonoBehaviour
 
         _inputActions.Enable();
         _inputActions.Player.Jump.performed += JumpOnPerformed;
+
+        Debug.Log(this + " is active");
     }
 
     private void OnDestroy()

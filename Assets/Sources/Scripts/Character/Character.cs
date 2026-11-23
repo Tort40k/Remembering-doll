@@ -37,6 +37,8 @@ public class Character : MonoBehaviour, IControllable
 
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
+
+        Debug.Log(this + " is active");
     }
     
     private void Update()
@@ -103,11 +105,10 @@ public class Character : MonoBehaviour, IControllable
 
     public void Jump()
     {
-        if (isGround)
-        {
-            _velocityY = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
-            print("I`m jumping!");
-        }
+        if (isGround) return;
+        _velocityY = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
+         
+        
     }
 
     private bool IsOnTheGround()

@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -5,16 +6,24 @@ using VContainer.Unity;
 public class GameLifetimeScope : LifetimeScope
 {
     [SerializeField] private string _helloText;
+    [SerializeField] private TextMeshProUGUI _healthtext;
 
     protected override void Configure(IContainerBuilder builder)
     {
         builder.RegisterInstance(_helloText);
+        builder.RegisterInstance(_healthtext);
+
         builder.RegisterComponentInHierarchy<TestHello>();
-        
-        // Регистрируем ввод как синглтон
+
+        builder.RegisterComponentInHierarchy<EventBus>();
+
+        builder.RegisterComponentInHierarchy<Health>();
+        builder.RegisterComponentInHierarchy<HealthBar>();
+
+        // регистрируем ввод как синглтон
         builder.Register<InputSystem_Actions>(Lifetime.Singleton);
 
-        // Безопасная регистрация вашего класса Character по интерфейсу
+        // безопасная регистрация класса Character по интерфейсу
         builder.RegisterComponentInHierarchy<Character>()
             .As<IControllable>();
 
