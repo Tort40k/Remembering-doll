@@ -69,14 +69,14 @@ public class Character : MonoBehaviour, IControllable
         _currentYaw += mouseDelta.x * _mouseSensitivity * 0.1f;
         _currentPitch -= mouseDelta.y * _mouseSensitivity * 0.1f;
 
-        // Ограничиваем вертикальный угол обзора
+        //Ограничиваем вертикальный угол обзора
         _currentPitch = Mathf.Clamp(_currentPitch, _minPitch, _maxPitch);
 
-        // 1. Плавный поворот самого ТЕЛА персонажа вслед за взглядом
+        //Плавный поворот самого ТЕЛА персонажа вслед за взглядом
         _bodyYaw = Mathf.SmoothDampAngle(_bodyYaw, _currentYaw, ref _bodyYawVelocity, _bodyRotationSmoothTime);
         transform.rotation = Quaternion.Euler(0f, _bodyYaw, 0f);
 
-        // 2. Вращаем голову локально так, чтобы компенсировать поворот тела (чтобы камера не крутилась НАХРЕН быстрее)
+        //Вращаем голову локально так, чтобы компенсировать поворот тела (чтобы камера не крутилась НАХРЕН быстрее)
         if (_headTransform != null)
         {
             float localHeadYaw = _currentYaw - _bodyYaw;
@@ -88,7 +88,7 @@ public class Character : MonoBehaviour, IControllable
     {
         if (_headTransform == null) return;
 
-        // Движение относительно направления башни
+        //Движение относительно направления башни
         Vector3 forward = _headTransform.forward;
         forward.y = 0f;
         forward.Normalize();

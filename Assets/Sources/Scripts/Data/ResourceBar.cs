@@ -3,60 +3,61 @@ using UnityEngine;
 using UnityEngine.UI;
 using VContainer;
 
-public class HealthBar : MonoBehaviour
+public class ResourceBar : MonoBehaviour
 {
-    [SerializeField] private Image _healthBarFilling;
+    [SerializeField] private string _resource = "Health";
+    [SerializeField] private TextMeshProUGUI _resourceText;
+    [SerializeField] private Image _barFilling;
     [SerializeField] private Image _damageTrailFilling;
-    [SerializeField] private Health _health;
+    [SerializeField] private Resource _targetResource;
     [SerializeField] private Gradient _gradient;
     [SerializeField] private float _fillSpeed = 2.5f;
     [SerializeField] private float _trailDelay = 0.35f;
     [SerializeField] private float _trailSpeed = 0.6f;
 
     private EventBus _eventBus;
-    private TextMeshProUGUI _healthText;
+   
     private float _targetNormalized = 1f;
     private float _trailDelayTimer;
 
     [Inject]
-    public void Construct(EventBus eventBus, TextMeshProUGUI healthText)
+    public void Construct(EventBus eventBus)
     {
         _eventBus = eventBus;
-        _healthText = healthText;
-        
+
         Debug.Log(this + " is active");
     }
 
     private void Start()
     {
         if (_eventBus != null)
-            _eventBus.Subscribe<HealthChangedSignal>(OnHealthChanged, priority: 10);
+            _eventBus.Subscribe<ResourceChangedSignal>(OnResourceChanged, priority: 10);
     }
 
     private void OnDisable()
     {
         if (_eventBus != null)
-            _eventBus.Unsubscribe<HealthChangedSignal>(OnHealthChanged);
+            _eventBus.Unsubscribe<ResourceChangedSignal>(OnResourceChanged);
     }
 
     private void Update()
     {
-        if (_healthBarFilling == null) return;
+        if (_barFilling == null) return;
 
-        _healthBarFilling.fillAmount = Mathf.MoveTowards(
-            _healthBarFilling.fillAmount,
+        _barFilling.fillAmount = Mathf.MoveTowards(
+            _barFilling.fillAmount,
             _targetNormalized,
             _fillSpeed * Time.deltaTime
         );
 
         if (_gradient != null)
-            _healthBarFilling.color = _gradient.Evaluate(_healthBarFilling.fillAmount);
+            _barFilling.color = _gradient.Evaluate(_barFilling.fillAmount);
 
         if (_damageTrailFilling == null) return;
 
-        if (_healthBarFilling.fillAmount > _damageTrailFilling.fillAmount)
+        if (_barFilling.fillAmount > _damageTrailFilling.fillAmount)
         {
-            _damageTrailFilling.fillAmount = _healthBarFilling.fillAmount;
+            _damageTrailFilling.fillAmount = _barFilling.fillAmount;
             _trailDelayTimer = 0f;
             return;
         }
@@ -77,16 +78,19 @@ public class HealthBar : MonoBehaviour
         }
     }
 
-    private void OnHealthChanged(HealthChangedSignal signal)
+    private void OnResourceChanged(ResourceChangedSignal signal)
     {
-        _targetNormalized = signal.MaxHealth > 0
-            ? Mathf.Clamp01((float)signal.CurrentHealth / signal.MaxHealth): 0f;
+        if (signal.Resource != _resource) return;
+
+        _targetNormalized = signal.MaxValue > 0
+            ? Mathf.Clamp01((float)signal.CurrentValue / signal.MaxValue)
+            : 0f;
 
         _trailDelayTimer = _trailDelay;
 
-        Debug.Log($"HP {signal.CurrentHealth}/{signal.MaxHealth} ({_targetNormalized:P0})");
+        Debug.Log($"{_resource} {signal.CurrentValue}/{signal.MaxValue} ({_targetNormalized:P0})");
 
-        if (_healthText != null)
-            _healthText.text = $"HP {signal.CurrentHealth}/{signal.MaxHealth}";
+        if (_resourceText != null)
+            _resourceText.text = $"{_resource} {signal.CurrentValue}/{signal.MaxValue}";
     }
 }
