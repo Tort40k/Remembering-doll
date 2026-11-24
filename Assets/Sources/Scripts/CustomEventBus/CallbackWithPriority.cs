@@ -1,9 +1,7 @@
 ﻿
 public class CallbackWithPriority
 {
-    /// <summary>
     /// Чем выше Priority, тем раньше вызовется ивент
-    /// </summary>
     public readonly int Priority;
     public readonly object Callback;
 

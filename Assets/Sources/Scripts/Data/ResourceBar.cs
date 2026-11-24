@@ -16,7 +16,7 @@ public class ResourceBar : MonoBehaviour
     [SerializeField] private float _trailSpeed = 0.6f;
 
     private EventBus _eventBus;
-   
+
     private float _targetNormalized = 1f;
     private float _trailDelayTimer;
 
@@ -62,14 +62,14 @@ public class ResourceBar : MonoBehaviour
             return;
         }
 
-        if (_trailDelayTimer > 0f)
+        if (_targetNormalized < _damageTrailFilling.fillAmount)
         {
-            _trailDelayTimer -= Time.deltaTime;
-            return;
-        }
+            if (_trailDelayTimer > 0f)
+            {
+                _trailDelayTimer -= Time.deltaTime;
+                return;
+            }
 
-        if (_damageTrailFilling.fillAmount > _targetNormalized)
-        {
             _damageTrailFilling.fillAmount = Mathf.MoveTowards(
                 _damageTrailFilling.fillAmount,
                 _targetNormalized,
@@ -82,11 +82,13 @@ public class ResourceBar : MonoBehaviour
     {
         if (signal.Resource != _resource) return;
 
+        float previousTarget = _targetNormalized;
         _targetNormalized = signal.MaxValue > 0
             ? Mathf.Clamp01((float)signal.CurrentValue / signal.MaxValue)
             : 0f;
 
-        _trailDelayTimer = _trailDelay;
+        if (_targetNormalized < previousTarget)
+            _trailDelayTimer = _trailDelay;
 
         Debug.Log($"{_resource} {signal.CurrentValue}/{signal.MaxValue} ({_targetNormalized:P0})");
 

@@ -8,9 +8,17 @@ public class Resource : MonoBehaviour
     [SerializeField] private int _maxValue = 100;
     [SerializeField] private TextMeshProUGUI _resourceText;
 
+    [Header("Armor Regeneration")]
+    [SerializeField] private bool _enableRegenForArmor = true;
+    [SerializeField] private float _regenDelay = 3f;
+    [SerializeField] private float _regenPerSecond = 15f;
+
     private int _currentValue;
     private EventBus _eventBus;
     private bool _isDead;
+
+    private float _timeSinceLastDamage;
+    private float _regenAccumulator;
 
     public string ResourceName => _resource;
     public int CurrentValue => _currentValue;
@@ -25,10 +33,41 @@ public class Resource : MonoBehaviour
         Debug.Log($"{gameObject.name} -> Resource '{_resource}' injected, EventBus is null: {_eventBus == null}");
     }
 
+    private void Update()
+    {
+        if (!CanRegenerate()) return;
+
+        _timeSinceLastDamage += Time.deltaTime;
+        if (_timeSinceLastDamage < _regenDelay) return;
+
+        _regenAccumulator += _regenPerSecond * Time.deltaTime;
+        if (_regenAccumulator >= 1f)
+        {
+            int pointsToAdd = Mathf.FloorToInt(_regenAccumulator);
+            _regenAccumulator -= pointsToAdd;
+            SetValue(_currentValue + pointsToAdd);
+        }
+    }
+
     public void Modify(int delta)
     {
         if (_isDead && _resource == "Health") return;
+
+        if (delta < 0 && _resource == "Armor")
+        {
+            _timeSinceLastDamage = 0f;
+            _regenAccumulator = 0f;
+        }
+
         SetValue(_currentValue + delta);
+    }
+
+    private bool CanRegenerate()
+    {
+        return _enableRegenForArmor
+               && _resource == "Armor"
+               && !_isDead
+               && _currentValue < _maxValue;
     }
 
     private void SetValue(int newValue)

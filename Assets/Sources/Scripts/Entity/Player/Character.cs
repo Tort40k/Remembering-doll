@@ -105,7 +105,7 @@ public class Character : MonoBehaviour, IControllable
 
     public void Jump()
     {
-        if (isGround) return;
+        if (!isGround) return;
         _velocityY = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
          
         

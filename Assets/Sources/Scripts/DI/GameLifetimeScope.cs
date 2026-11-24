@@ -16,7 +16,7 @@ public class GameLifetimeScope : LifetimeScope
         // регистрируем ввод как синглтон
         builder.Register<InputSystem_Actions>(Lifetime.Singleton);
 
-        // безопасная регистрация класса Character по интерфейсу
+        //безопасная регистрация класса Character по интерфейсу
         builder.RegisterComponentInHierarchy<Character>()
             .As<IControllable>()
             .AsSelf();
