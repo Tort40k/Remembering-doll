@@ -16,6 +16,7 @@ public class FsmStEnemyMeleeChase : FsmState
     private float _stopTimer;
     private float _repathTimer;
     private Vector3 _lastGoalPos;
+    private bool _hasSavedPath;
 
     private static readonly float[] FlankAngles = { 0f, -75f, 75f, 165f };
 
@@ -61,24 +62,29 @@ public class FsmStEnemyMeleeChase : FsmState
     {
         _stopTimer = 0f;
         _repathTimer = Random.Range(0f, _repathInterval);
-        _path.Clear();
-        _waypointIndex = 0;
 
         float dist = _enemy.GetFlatDistanceToTarget();
         Vector3 goal = GetTacticalGoal(_enemy.GetFlatTargetPosition(), dist);
         CurrentTacticalGoal = goal;
         HasTacticalGoal = dist > _directChaseDistance;
-        _lastGoalPos = goal;
 
-        RecalculatePath();
+        if (!_hasSavedPath || _path.Count == 0 || _waypointIndex >= _path.Count)
+        {
+            _path.Clear();
+            _waypointIndex = 0;
+            _lastGoalPos = goal;
+            RecalculatePath(forceUpdate: true);
+        }
+        else if ((goal - _lastGoalPos).sqrMagnitude > 0.5f)
+        {
+            RecalculatePath(forceUpdate: false);
+        }
     }
 
     public override void Exit()
     {
         _stopTimer = 0f;
         HasTacticalGoal = false;
-        _path.Clear();
-        _waypointIndex = 0;
         _enemy.ClearPathVisual();
     }
 
@@ -111,8 +117,7 @@ public class FsmStEnemyMeleeChase : FsmState
         _repathTimer -= Time.deltaTime;
         if (_repathTimer <= 0f || (tacticalGoal - _lastGoalPos).sqrMagnitude > 0.5f)
         {
-            _lastGoalPos = tacticalGoal;
-            RecalculatePath();
+            RecalculatePath(forceUpdate: false);
         }
 
         Vector3 moveDir = GetPathDirection(tacticalGoal);
@@ -192,7 +197,7 @@ public class FsmStEnemyMeleeChase : FsmState
         return Vector3.Distance(current, flatGoal);
     }
 
-    private void RecalculatePath()
+    private void RecalculatePath(bool forceUpdate)
     {
         _repathTimer = _repathInterval;
         float dist = _enemy.GetFlatDistanceToTarget();
@@ -201,9 +206,22 @@ public class FsmStEnemyMeleeChase : FsmState
         HasTacticalGoal = dist > _directChaseDistance;
 
         List<Vector3> newPath = _pathfinder.FindPath(_enemy.transform.position, goal);
+
+        if (newPath == null || newPath.Count == 0)
+        {
+            if (_path.Count > 0 && _waypointIndex < _path.Count)
+                _hasSavedPath = true;
+            return;
+        }
+
+        if (!forceUpdate && _hasSavedPath && _waypointIndex < _path.Count && (goal - _lastGoalPos).sqrMagnitude <= 0.5f)
+            return;
+
+        _lastGoalPos = goal;
         _path.Clear();
         _path.AddRange(newPath);
         _waypointIndex = 0;
+        _hasSavedPath = true;
         _enemy.SyncPathVisual(_path, _waypointIndex);
     }
 
