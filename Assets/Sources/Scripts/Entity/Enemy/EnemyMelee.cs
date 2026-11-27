@@ -9,6 +9,19 @@ public class EnemyMelee : Enemy
     [SerializeField] private float _attackRange = 1.5f;
     [SerializeField] private float _stopDelay = 0.3f;
 
+    [Header("Windup & Dash")]
+    [SerializeField] private float _windupDuration = 5f;
+    [SerializeField] private float _dashDistance = 2.5f;
+    [SerializeField] private float _dashSpeed = 12f;
+    [SerializeField] private float _dashZoneRadius = 0.6f;
+
+    [Header("Dash Visualization")]
+    [SerializeField] private bool _drawDashInGameView = true;
+    [SerializeField] private float _dashHeightOffset = 0.15f;
+    [SerializeField] private int _dashCircleSegments = 24;
+    [SerializeField] private Color _windupDashColor = new Color(1f, 0.55f, 0f, 0.9f);
+    [SerializeField] private Color _activeDashColor = new Color(1f, 0.15f, 0.15f, 1f);
+
     [Header("A* Pathfinding")]
     [SerializeField] private float _cellSize = 0.6f;
     [SerializeField] private int _halfExtent = 25;
@@ -25,17 +38,21 @@ public class EnemyMelee : Enemy
     [SerializeField] private float _waypointSphereRadius = 0.14f;
 
     private FsmStEnemyMeleeChase _chaseState;
+    private FsmStMeleeEnemyWindup _windupState;
     private LineRenderer _pathLineRenderer;
+    private LineRenderer _dashLineRenderer;
+    private Material _lineMaterial;
 
     public float AttackDamage => _attack;
     public float AttackRange => _attackRange;
     public float StopDelay => _stopDelay;
+    public float DashZoneRadius => _dashZoneRadius;
 
     [Inject]
     public override void Construct()
     {
         base.Construct();
-        SetupLineRendererIfNeeded();
+        SetupLineRenderersIfNeeded();
 
         _chaseState = new FsmStEnemyMeleeChase(
             _fsm,
@@ -48,24 +65,99 @@ public class EnemyMelee : Enemy
             _directChaseDistance
         );
 
+        _windupState = new FsmStMeleeEnemyWindup(
+            _fsm,
+            this,
+            _windupDuration,
+            _dashDistance,
+            _dashSpeed
+        );
+
         _fsm.AddState(_chaseState);
-        _fsm.AddState(new FsmStMeleeEnemyAttack(_fsm, this));
+        _fsm.AddState(_windupState);
 
         _fsm.SetState<FsmStEnemyMeleeChase>();
     }
 
-    private void SetupLineRendererIfNeeded()
+    private void OnDestroy()
     {
-        if (!_drawPathInGameView) return;
+        if (_lineMaterial != null)
+        {
+            Destroy(_lineMaterial);
+            _lineMaterial = null;
+        }
+    }
 
-        _pathLineRenderer = GetComponent<LineRenderer>();
-        if (_pathLineRenderer == null)
-            _pathLineRenderer = gameObject.AddComponent<LineRenderer>();
+    private void SetupLineRenderersIfNeeded()
+    {
+        Shader shader = Shader.Find("Sprites/Default");
+        if (shader != null)
+            _lineMaterial = new Material(shader);
 
-        _pathLineRenderer.useWorldSpace = true;
-        _pathLineRenderer.startWidth = 0.08f;
-        _pathLineRenderer.endWidth = 0.08f;
-        _pathLineRenderer.numCapVertices = 4;
+        if (_drawPathInGameView)
+        {
+            GameObject pathObj = new GameObject("PathLineRenderer");
+            pathObj.transform.SetParent(transform, false);
+            _pathLineRenderer = pathObj.AddComponent<LineRenderer>();
+            _pathLineRenderer.useWorldSpace = true;
+            _pathLineRenderer.startWidth = 0.08f;
+            _pathLineRenderer.endWidth = 0.08f;
+            _pathLineRenderer.numCapVertices = 4;
+            if (_lineMaterial != null)
+                _pathLineRenderer.material = _lineMaterial;
+            _pathLineRenderer.positionCount = 0;
+        }
+
+        if (_drawDashInGameView)
+        {
+            GameObject dashObj = new GameObject("DashLineRenderer");
+            dashObj.transform.SetParent(transform, false);
+            _dashLineRenderer = dashObj.AddComponent<LineRenderer>();
+            _dashLineRenderer.useWorldSpace = true;
+            _dashLineRenderer.loop = false;
+            _dashLineRenderer.startWidth = 0.09f;
+            _dashLineRenderer.endWidth = 0.09f;
+            _dashLineRenderer.numCapVertices = 4;
+            if (_lineMaterial != null)
+                _dashLineRenderer.material = _lineMaterial;
+            _dashLineRenderer.positionCount = 0;
+        }
+    }
+
+    public void SyncDashVisual(Vector3 startPos, Vector3 targetPos, bool isDashing, float progress)
+    {
+        if (!_drawDashInGameView || _dashLineRenderer == null) return;
+
+        int segments = Mathf.Max(8, _dashCircleSegments);
+        Color color = isDashing ? _activeDashColor : Color.Lerp(_windupDashColor, _activeDashColor, progress);
+
+        Vector3 start = startPos + Vector3.up * _dashHeightOffset;
+        Vector3 end = targetPos + Vector3.up * _dashHeightOffset;
+
+        int totalPoints = 2 + (segments + 1);
+        _dashLineRenderer.positionCount = totalPoints;
+        _dashLineRenderer.startColor = color;
+        _dashLineRenderer.endColor = color;
+
+        _dashLineRenderer.SetPosition(0, start);
+        _dashLineRenderer.SetPosition(1, end);
+
+        for (int i = 0; i <= segments; i++)
+        {
+            float angle = (i / (float)segments) * Mathf.PI * 2f;
+            Vector3 circlePt = end + new Vector3(
+                Mathf.Cos(angle) * _dashZoneRadius,
+                0f,
+                Mathf.Sin(angle) * _dashZoneRadius
+            );
+            _dashLineRenderer.SetPosition(2 + i, circlePt);
+        }
+    }
+
+    public void ClearDashVisual()
+    {
+        if (_dashLineRenderer != null)
+            _dashLineRenderer.positionCount = 0;
     }
 
     public void SyncPathVisual(IReadOnlyList<Vector3> path, int waypointIndex)
@@ -127,6 +219,7 @@ public class EnemyMelee : Enemy
     private void OnDrawGizmos()
     {
         DrawTacticalGoalGizmo();
+        DrawWindupDashZoneGizmo();
     }
 
     protected override void OnDrawGizmosSelected()
@@ -137,6 +230,18 @@ public class EnemyMelee : Enemy
         Gizmos.DrawWireSphere(transform.position, _attackRange);
 
         DrawPathWaypointsGizmo();
+    }
+
+    private void DrawWindupDashZoneGizmo()
+    {
+        if (_windupState == null || !_windupState.HasDashZone) return;
+
+        Vector3 start = _windupState.DashStartPosition + Vector3.up * 0.2f;
+        Vector3 end = _windupState.DashTargetPosition + Vector3.up * 0.2f;
+
+        Gizmos.color = _windupState.IsDashing ? Color.red : new Color(1f, 0.45f, 0f);
+        Gizmos.DrawLine(start, end);
+        Gizmos.DrawWireSphere(end, _dashZoneRadius);
     }
 
     private void DrawPathWaypointsGizmo()

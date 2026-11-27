@@ -36,8 +36,9 @@ public class Character : MonoBehaviour, IControllable
 
         Debug.Log(this + " is active");
     }
+    
 
-    private void Update()
+    private void FixedUpdate()
     {
         if (_controller == null) return;
 
@@ -92,7 +93,7 @@ public class Character : MonoBehaviour, IControllable
         Vector3 worldMoveDirection = (forward * _moveDirection.z) + (right * _moveDirection.x);
 
         Vector3 finalMove = (worldMoveDirection * _speed) + (Vector3.up * _velocityY);
-        _controller.Move(finalMove * Time.deltaTime);
+        _controller.Move(finalMove * Time.fixedDeltaTime);
     }
 
     public void Jump()
@@ -117,6 +118,6 @@ public class Character : MonoBehaviour, IControllable
 
     private void DoGravity()
     {
-        _velocityY += _gravity * Time.deltaTime;
+        _velocityY += _gravity * Time.fixedDeltaTime;
     }
 }

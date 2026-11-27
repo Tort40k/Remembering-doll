@@ -43,7 +43,9 @@ public class FsmStEnemyMeleeChase : FsmState
 
         float radius = enemy.Controller != null ? Mathf.Max(0.4f, enemy.Controller.radius * 1.2f) : 0.45f;
         float height = enemy.Controller != null ? enemy.Controller.height : 1.5f;
-        float stepOffset = enemy.Controller != null ? Mathf.Max(0.6f, enemy.Controller.stepOffset * 1.5f) : 0.75f;
+        float baseStepOffset = enemy.Controller != null ? Mathf.Max(0.6f, enemy.Controller.stepOffset * 1.5f) : 0.75f;
+        float gridStep = WorldManager.Instance != null ? WorldManager.Instance.PointDistance * 1.25f : 1.25f;
+        float effectiveStepHeight = Mathf.Max(baseStepOffset, gridStep);
         float slopeLimit = enemy.Controller != null ? enemy.Controller.slopeLimit : 45f;
 
         _pathfinder = new GridPathfinder(
@@ -53,7 +55,7 @@ public class FsmStEnemyMeleeChase : FsmState
             halfExtent,
             radius,
             height,
-            stepOffset,
+            effectiveStepHeight,
             slopeLimit
         );
     }
@@ -100,7 +102,7 @@ public class FsmStEnemyMeleeChase : FsmState
             _stopTimer += Time.deltaTime;
             if (_stopTimer >= _enemy.StopDelay)
             {
-                Fsm.SetState<FsmStMeleeEnemyAttack>();
+                Fsm.SetState<FsmStMeleeEnemyWindup>();
                 return;
             }
         }
@@ -161,16 +163,18 @@ public class FsmStEnemyMeleeChase : FsmState
 
     private Vector3 GetPathDirection(Vector3 flatGoal)
     {
-        Vector3 current = _enemy.transform.position;
-        current.y = 0f;
+        Vector3 pos = _enemy.transform.position;
+        Vector3 current = new Vector3(pos.x, 0f, pos.z);
 
         if (_path.Count > 0 && _waypointIndex < _path.Count)
         {
             while (_waypointIndex < _path.Count)
             {
-                Vector3 wp = _path[_waypointIndex];
-                wp.y = 0f;
-                if (Vector3.Distance(current, wp) <= _waypointReachRadius)
+                Vector3 rawWp = _path[_waypointIndex];
+                Vector3 wp = new Vector3(rawWp.x, 0f, rawWp.z);
+                float dy = Mathf.Abs(pos.y - rawWp.y);
+
+                if (Vector3.Distance(current, wp) <= _waypointReachRadius && dy <= _waypointReachRadius * 2f)
                     _waypointIndex++;
                 else
                     return (wp - current).normalized;

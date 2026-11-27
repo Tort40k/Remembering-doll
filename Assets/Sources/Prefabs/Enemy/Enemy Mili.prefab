@@ -87,7 +87,7 @@ CharacterController:
   serializedVersion: 3
   m_Height: 2
   m_Radius: 0.5
-  m_SlopeLimit: 45
+  m_SlopeLimit: 60
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
@@ -110,19 +110,22 @@ MonoBehaviour:
   _groundMask:
     serializedVersion: 2
     m_Bits: 64
-  _speed: 5
+  _speed: 7
   _gravity: -9.81
   _rotationSpeed: 120
   _groundRadiusChecker: 0.2
   _attack: 10
-  _attackRange: 2
-  _stopDelay: 0.1
-  _cellSize: 1
+  _attackRange: 2.32
+  _stopDelay: 0.3
+  _cellSize: 2
   _halfExtent: 12
-  _repathInterval: 0.5
-  _waypointReachRadius: 0.35
-  _flankRadius: 3
-  _directChaseDistance: 4.5
+  _repathInterval: 1
+  _waypointReachRadius: 0.24
+  _flankRadius: 4
+  _directChaseDistance: 6.94
+  _drawPathInGameView: 1
+  _pathHeightOffset: 0.25
+  _waypointSphereRadius: 0.14
 --- !u!1 &4479644336214864537
 GameObject:
   m_ObjectHideFlags: 0
