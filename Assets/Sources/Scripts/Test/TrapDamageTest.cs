@@ -17,21 +17,25 @@ public class TrapDamageTest : MonoBehaviour
     }
 
     private void OnTriggerEnter(Collider other)
-    {
-        if (_target == null || !_target.IsAlive) return;
+{
+    if (_target == null || !_target.IsAlive) return;
 
-        if (_damageCoroutine == null)
-            _damageCoroutine = StartCoroutine(DealDamageOverTime());
-    }
+    if (other.GetComponentInParent<IDamageable>() != _target) return;
+
+    if (_damageCoroutine == null)
+        _damageCoroutine = StartCoroutine(DealDamageOverTime());
+}
 
     private void OnTriggerExit(Collider other)
+{
+    if (other.GetComponentInParent<IDamageable>() != _target) return;
+
+    if (_damageCoroutine != null)
     {
-        if (_damageCoroutine != null)
-        {
-            StopCoroutine(_damageCoroutine);
-            _damageCoroutine = null;
-        }
+        StopCoroutine(_damageCoroutine);
+        _damageCoroutine = null;
     }
+}
 
     private IEnumerator DealDamageOverTime()
     {

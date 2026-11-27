@@ -9,6 +9,7 @@ public class GameLifetimeScope : LifetimeScope
     protected override void Configure(IContainerBuilder builder)
     {
         builder.RegisterInstance(_helloText);
+        // builder.Register<CharacterController>(Lifetime.Singleton);
 
         builder.RegisterComponentInHierarchy<TestHello>();
         builder.RegisterComponentInHierarchy<EventBus>();
@@ -21,7 +22,7 @@ public class GameLifetimeScope : LifetimeScope
             .As<IControllable>()
             .AsSelf();
 
-        builder.RegisterComponentInHierarchy<CharacterController>();
+        // builder.RegisterComponentInHierarchy<CharacterController>();
         builder.RegisterComponentInHierarchy<CharacterInputController>();
 
         builder.RegisterComponentInHierarchy<Resource>();
@@ -36,6 +37,11 @@ public class GameLifetimeScope : LifetimeScope
 
         builder.RegisterBuildCallback(container =>
         {
+            // foreach(var controller in FindObjectsByType<CharacterController>(FindObjectsSortMode.None))
+            // {
+            //     container.Inject(controller);
+            // }
+             
             foreach (var resource in FindObjectsByType<Resource>(FindObjectsSortMode.None))
             {
                 container.Inject(resource);
@@ -69,6 +75,10 @@ public class GameLifetimeScope : LifetimeScope
             foreach (var healPickup in FindObjectsByType<HealPickup>(FindObjectsSortMode.None))
             {
                 container.Inject(healPickup);
+            }
+            foreach (var enemy in FindObjectsByType<Enemy>(FindObjectsSortMode.None))
+            {
+                container.Inject(enemy);
             }
         });
     }
