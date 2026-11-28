@@ -20,6 +20,7 @@ public abstract class Enemy : MonoBehaviour
     [SerializeField] protected bool _dealContactDamage = true;
     [SerializeField] protected int _contactDamage = 10;
     [SerializeField] protected float _contactDamageCooldown = 0.75f;
+    [SerializeField] protected float _maxContactVerticalDiff = 1.85f;
     [SerializeField] protected Vector3 _contactBoxSize = new Vector3(1.2f, 1.8f, 1.2f);
     [SerializeField] protected Vector3 _contactBoxOffset = new Vector3(0f, 0.9f, 0.25f);
 
@@ -27,6 +28,8 @@ public abstract class Enemy : MonoBehaviour
     private bool _isGrounded;
     private float _velocityY;
     private float _contactCooldownTimer;
+    private Transform _cachedTarget;
+    private IDamageable _cachedDamageable;
 
     public CharacterController Controller => _controller;
     public Transform Target => _target;
@@ -63,10 +66,7 @@ public abstract class Enemy : MonoBehaviour
         if (!IsTargetInsideContactBox())
             return;
 
-        IDamageable damageable = _target.GetComponent<IDamageable>()
-            ?? _target.GetComponentInParent<IDamageable>()
-            ?? _target.GetComponentInChildren<IDamageable>();
-
+        IDamageable damageable = ResolveTargetDamageable();
         if (damageable == null)
             return;
 
@@ -74,8 +74,29 @@ public abstract class Enemy : MonoBehaviour
         _contactCooldownTimer = Mathf.Max(0.05f, _contactDamageCooldown);
     }
 
+    private IDamageable ResolveTargetDamageable()
+    {
+        if (_cachedTarget != _target)
+        {
+            _cachedTarget = _target;
+            _cachedDamageable = _target.GetComponent<IDamageable>()
+                ?? _target.GetComponentInParent<IDamageable>()
+                ?? _target.GetComponentInChildren<IDamageable>();
+        }
+
+        return _cachedDamageable;
+    }
+
     protected virtual bool IsTargetInsideContactBox()
     {
+        float verticalDiff = Mathf.Abs(transform.position.y - _target.position.y);
+        float verticalLimit = _controller != null
+            ? Mathf.Max(_maxContactVerticalDiff, _controller.height + 0.25f)
+            : _maxContactVerticalDiff;
+
+        if (verticalDiff > verticalLimit)
+            return false;
+
         Vector3 boxCenter = transform.TransformPoint(_contactBoxOffset);
         Quaternion boxRot = transform.rotation;
         Vector3 halfExtents = GetSafeBoxHalfExtents(_contactBoxSize);

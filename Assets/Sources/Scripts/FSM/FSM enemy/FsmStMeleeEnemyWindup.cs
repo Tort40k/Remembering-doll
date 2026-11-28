@@ -142,9 +142,11 @@ public class FsmStMeleeEnemyWindup : FsmState
         if (_enemy.Target == null) return false;
 
         float verticalDiff = Mathf.Abs(_enemy.transform.position.y - _enemy.Target.position.y);
+        // Позволяем попадать, если игрок стоит прямо на враге (в пределах высоты контроллера),
+        // но отсекаем высокие возвышенности и уступы выше головы врага.
         float maxVerticalReach = _enemy.Controller != null
-            ? Mathf.Max(0.75f, _enemy.Controller.height * 0.6f)
-            : 0.9f;
+            ? _enemy.Controller.height + 0.35f
+            : 2.0f;
         if (verticalDiff > maxVerticalReach)
             return false;
 
@@ -158,7 +160,7 @@ public class FsmStMeleeEnemyWindup : FsmState
         a.y = 0f;
         b.y = 0f;
 
-        float touchDistance = selfRadius + targetRadius + 0.1f;
+        float touchDistance = selfRadius + targetRadius + 0.15f;
         float distSqr = (b - a).sqrMagnitude;
 
         bool sideHitWhileClose = (moveFlags & CollisionFlags.Sides) != 0 && distSqr <= (touchDistance + 0.35f) * (touchDistance + 0.35f);

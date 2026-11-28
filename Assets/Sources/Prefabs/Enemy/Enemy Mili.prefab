@@ -114,10 +114,24 @@ MonoBehaviour:
   _gravity: -9.81
   _rotationSpeed: 120
   _groundRadiusChecker: 0.2
+  _dealContactDamage: 1
+  _contactDamage: 10
+  _contactDamageCooldown: 0.75
+  _contactBoxSize: {x: 1.52, y: 1.8, z: 1.47}
+  _contactBoxOffset: {x: 0, y: 0.97, z: 0.38}
   _attack: 10
-  _attackRange: 2.32
-  _stopDelay: 0.3
-  _cellSize: 2
+  _attackRange: 5
+  _stopDelay: 0.15
+  _windupDuration: 0.8
+  _dashDistance: 7
+  _dashSpeed: 20
+  _dashZoneRadius: 0.6
+  _drawDashInGameView: 1
+  _dashHeightOffset: 0.15
+  _dashCircleSegments: 24
+  _windupDashColor: {r: 1, g: 0.55, b: 0, a: 0.9}
+  _activeDashColor: {r: 1, g: 0.15, b: 0.15, a: 1}
+  _cellSize: 1
   _halfExtent: 12
   _repathInterval: 1
   _waypointReachRadius: 0.24
